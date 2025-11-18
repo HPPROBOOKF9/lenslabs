@@ -12,6 +12,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { z } from "zod";
+
+const listingDetailsSchema = z.object({
+  title: z.string()
+    .trim()
+    .min(1, "Title is required")
+    .max(300, "Title must be less than 300 characters"),
+  description: z.string()
+    .trim()
+    .max(5000, "Description must be less than 5000 characters")
+    .optional()
+});
 
 const CPV = () => {
   const navigate = useNavigate();
@@ -35,11 +47,16 @@ const CPV = () => {
 
   const updateMutation = useMutation({
     mutationFn: async () => {
+      const validated = listingDetailsSchema.parse({
+        title,
+        description: description || undefined
+      });
+
       const { error } = await supabase
         .from("listings")
         .update({
-          title,
-          description,
+          title: validated.title,
+          description: validated.description,
           status: "assign",
         })
         .eq("id", selectedListing.id);
@@ -51,6 +68,13 @@ const CPV = () => {
       setSelectedListing(null);
       setTitle("");
       setDescription("");
+    },
+    onError: (error) => {
+      if (error instanceof z.ZodError) {
+        toast({ title: error.errors[0].message, variant: "destructive" });
+      } else {
+        toast({ title: "Error updating listing", variant: "destructive" });
+      }
     },
   });
 
