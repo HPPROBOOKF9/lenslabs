@@ -16,6 +16,7 @@ import Draft from "./pages/Draft";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Unauthorized from "./pages/Unauthorized";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/create-new" element={<ProtectedRoute><CreateNew /></ProtectedRoute>} />
           <Route path="/cpv" element={<ProtectedRoute><CPV /></ProtectedRoute>} />

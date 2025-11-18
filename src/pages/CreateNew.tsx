@@ -33,10 +33,17 @@ const CreateNew = () => {
       return;
     }
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast({ title: "Authentication error", variant: "destructive" });
+      return;
+    }
+
     const { error } = await supabase.from("listings").insert({
       product_name: productName,
       category_id: categoryId,
       status: "cpv",
+      created_by: user.id,
     });
 
     if (error) {
