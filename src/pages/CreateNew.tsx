@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, FolderPlus } from "lucide-react";
+import { ArrowLeft, Plus, FolderPlus, List } from "lucide-react";
 import { z } from "zod";
 
 const listingSchema = z.object({
@@ -26,12 +27,22 @@ const categorySchema = z.object({
     .max(100, "Category name must be less than 100 characters")
 });
 
+const bulkListingSchema = z.object({
+  bulk_text: z.string()
+    .trim()
+    .min(1, "Please enter at least one product name"),
+  category_id: z.string().uuid("Invalid category selected")
+});
+
 const CreateNew = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [mode, setMode] = useState<"listing" | "category" | null>(null);
+  const queryClient = useQueryClient();
+  const [mode, setMode] = useState<"listing" | "category" | "bulk" | null>(null);
   const [productName, setProductName] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [bulkCategoryId, setBulkCategoryId] = useState("");
+  const [bulkText, setBulkText] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
 
   const { data: categories } = useQuery({
@@ -93,8 +104,55 @@ const CreateNew = () => {
       }
 
       toast({ title: "Category created successfully" });
+      await queryClient.invalidateQueries({ queryKey: ["categories"] });
       setNewCategoryName("");
       setMode(null);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({ title: error.errors[0].message, variant: "destructive" });
+      }
+    }
+  };
+
+  const handleCreateBulkListings = async () => {
+    try {
+      const validated = bulkListingSchema.parse({
+        bulk_text: bulkText,
+        category_id: bulkCategoryId
+      });
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: "Authentication error", variant: "destructive" });
+        return;
+      }
+
+      const productNames = validated.bulk_text
+        .split('\n')
+        .map(name => name.trim())
+        .filter(name => name.length > 0);
+
+      if (productNames.length === 0) {
+        toast({ title: "No valid product names found", variant: "destructive" });
+        return;
+      }
+
+      const listings = productNames.map(name => ({
+        product_name: name,
+        category_id: validated.category_id,
+        status: "cpv" as const,
+        created_by: user.id,
+      }));
+
+      const { error } = await supabase.from("listings").insert(listings);
+
+      if (error) {
+        toast({ title: "Error creating listings", variant: "destructive" });
+        return;
+      }
+
+      toast({ title: `${productNames.length} listings created and moved to CPV` });
+      navigate("/cpv");
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast({ title: error.errors[0].message, variant: "destructive" });
@@ -113,13 +171,20 @@ const CreateNew = () => {
         </div>
 
         {!mode && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <Card
               className="p-8 flex flex-col items-center justify-center gap-4 hover:bg-accent transition-colors cursor-pointer"
               onClick={() => setMode("listing")}
             >
               <Plus className="w-16 h-16 text-primary" strokeWidth={1.5} />
               <div className="text-lg font-medium text-center">Create New Listing</div>
+            </Card>
+            <Card
+              className="p-8 flex flex-col items-center justify-center gap-4 hover:bg-accent transition-colors cursor-pointer"
+              onClick={() => setMode("bulk")}
+            >
+              <List className="w-16 h-16 text-primary" strokeWidth={1.5} />
+              <div className="text-lg font-medium text-center">Bulk Create Listings</div>
             </Card>
             <Card
               className="p-8 flex flex-col items-center justify-center gap-4 hover:bg-accent transition-colors cursor-pointer"
@@ -167,6 +232,48 @@ const CreateNew = () => {
                   Cancel
                 </Button>
               </div>
+            </div>
+          </Card>
+        )}
+
+        {mode === "bulk" && (
+          <Card className="p-6 space-y-4">
+            <h2 className="text-xl font-semibold">Bulk Create Listings</h2>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="bulkCategory">Category</Label>
+                <Select value={bulkCategoryId} onValueChange={setBulkCategoryId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories?.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="bulkProducts">Product Names (one per line)</Label>
+                <Textarea
+                  id="bulkProducts"
+                  placeholder="Enter product names, one per line&#10;Example:&#10;Product 1&#10;Product 2&#10;Product 3"
+                  value={bulkText}
+                  onChange={(e) => setBulkText(e.target.value)}
+                  className="min-h-[200px]"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Enter each product name on a new line. Empty lines will be ignored.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleCreateBulkListings}>Create Listings</Button>
+              <Button variant="outline" onClick={() => setMode(null)}>
+                Cancel
+              </Button>
             </div>
           </Card>
         )}
