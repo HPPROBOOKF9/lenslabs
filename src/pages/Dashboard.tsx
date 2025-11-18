@@ -4,6 +4,7 @@ import { AdminCard } from "@/components/AdminCard";
 import { StatCard } from "@/components/StatCard";
 import { ActionCard } from "@/components/ActionCard";
 import { Card } from "@/components/ui/card";
+import SignOutButton from "@/components/SignOutButton";
 import { 
   Plus, 
   Briefcase, 
@@ -78,11 +79,14 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <button className="p-2 hover:bg-accent rounded-lg transition-colors">
-            <Menu className="w-6 h-6 text-muted-foreground" />
-          </button>
-          <h1 className="text-3xl font-bold">Product Management Dashboard</h1>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <button className="p-2 hover:bg-accent rounded-lg transition-colors">
+              <Menu className="w-6 h-6 text-muted-foreground" />
+            </button>
+            <h1 className="text-3xl font-bold">Product Management Dashboard</h1>
+          </div>
+          <SignOutButton />
         </div>
 
         {/* Admin Cards */}
