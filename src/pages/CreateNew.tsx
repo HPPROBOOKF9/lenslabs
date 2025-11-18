@@ -9,6 +9,22 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, FolderPlus } from "lucide-react";
+import { z } from "zod";
+
+const listingSchema = z.object({
+  product_name: z.string()
+    .trim()
+    .min(1, "Product name is required")
+    .max(200, "Product name must be less than 200 characters"),
+  category_id: z.string().uuid("Invalid category selected")
+});
+
+const categorySchema = z.object({
+  name: z.string()
+    .trim()
+    .min(1, "Category name is required")
+    .max(100, "Category name must be less than 100 characters")
+});
 
 const CreateNew = () => {
   const navigate = useNavigate();
@@ -28,51 +44,62 @@ const CreateNew = () => {
   });
 
   const handleCreateListing = async () => {
-    if (!productName || !categoryId) {
-      toast({ title: "Please fill all fields", variant: "destructive" });
-      return;
+    try {
+      const validated = listingSchema.parse({
+        product_name: productName,
+        category_id: categoryId
+      });
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: "Authentication error", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await supabase.from("listings").insert({
+        product_name: validated.product_name,
+        category_id: validated.category_id,
+        status: "cpv",
+        created_by: user.id,
+      });
+
+      if (error) {
+        toast({ title: "Error creating listing", variant: "destructive" });
+        return;
+      }
+
+      toast({ title: "Listing created and moved to CPV" });
+      navigate("/cpv");
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({ title: error.errors[0].message, variant: "destructive" });
+      }
     }
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      toast({ title: "Authentication error", variant: "destructive" });
-      return;
-    }
-
-    const { error } = await supabase.from("listings").insert({
-      product_name: productName,
-      category_id: categoryId,
-      status: "cpv",
-      created_by: user.id,
-    });
-
-    if (error) {
-      toast({ title: "Error creating listing", variant: "destructive" });
-      return;
-    }
-
-    toast({ title: "Listing created and moved to CPV" });
-    navigate("/cpv");
   };
 
   const handleCreateCategory = async () => {
-    if (!newCategoryName) {
-      toast({ title: "Please enter category name", variant: "destructive" });
-      return;
+    try {
+      const validated = categorySchema.parse({
+        name: newCategoryName
+      });
+
+      const { error } = await supabase.from("categories").insert({
+        name: validated.name,
+      });
+
+      if (error) {
+        toast({ title: "Error creating category", variant: "destructive" });
+        return;
+      }
+
+      toast({ title: "Category created successfully" });
+      setNewCategoryName("");
+      setMode(null);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({ title: error.errors[0].message, variant: "destructive" });
+      }
     }
-
-    const { error } = await supabase.from("categories").insert({
-      name: newCategoryName,
-    });
-
-    if (error) {
-      toast({ title: "Error creating category", variant: "destructive" });
-      return;
-    }
-
-    toast({ title: "Category created successfully" });
-    setNewCategoryName("");
-    setMode(null);
   };
 
   return (

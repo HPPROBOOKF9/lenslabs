@@ -7,9 +7,19 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Search } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
+
+const searchSchema = z.object({
+  searchTerm: z.string()
+    .trim()
+    .min(1, "Search term is required")
+    .max(200, "Search term must be less than 200 characters")
+});
 
 const TrendAnalysis = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [searchTriggered, setSearchTriggered] = useState(false);
 
@@ -30,7 +40,14 @@ const TrendAnalysis = () => {
   });
 
   const handleSearch = () => {
-    setSearchTriggered(true);
+    try {
+      searchSchema.parse({ searchTerm });
+      setSearchTriggered(true);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({ title: error.errors[0].message, variant: "destructive" });
+      }
+    }
   };
 
   return (
