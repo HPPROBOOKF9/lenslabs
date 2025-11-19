@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { DeleteListingButton } from "@/components/DeleteListingButton";
 
 const NR = () => {
   const navigate = useNavigate();
@@ -19,7 +20,8 @@ const NR = () => {
       const { data, error } = await supabase
         .from("listings")
         .select("*, categories(name)")
-        .eq("status", "nr");
+        .eq("status", "nr")
+        .is("deleted_at", null);
       if (error) throw error;
       return data;
     },
@@ -90,6 +92,7 @@ const NR = () => {
                         <XCircle className="w-4 h-4 mr-1" />
                         Reject
                       </Button>
+                      <DeleteListingButton listingId={listing.id} queryKey={["nr-listings"]} />
                     </div>
                   </TableCell>
                 </TableRow>

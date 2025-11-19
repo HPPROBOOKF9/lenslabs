@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { DeleteListingButton } from "@/components/DeleteListingButton";
 
 const Worklist = () => {
   const navigate = useNavigate();
@@ -22,7 +23,8 @@ const Worklist = () => {
           *,
           categories(name)
         `)
-        .eq("status", "worklist");
+        .eq("status", "worklist")
+        .is("deleted_at", null);
       if (error) throw error;
       return data;
     },
@@ -84,9 +86,12 @@ const Worklist = () => {
                     <TableCell>{assignedAdmin?.admin_code || "Unassigned"}</TableCell>
                     <TableCell><StatusBadge status={listing.status} /></TableCell>
                     <TableCell>
-                      <Button size="sm" onClick={() => submitMutation.mutate(listing.id)}>
-                        Complete & Submit
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => submitMutation.mutate(listing.id)}>
+                          Complete & Submit
+                        </Button>
+                        <DeleteListingButton listingId={listing.id} queryKey={["worklist-listings"]} />
+                      </div>
                     </TableCell>
                   </TableRow>
                 );

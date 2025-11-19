@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { DeleteListingButton } from "@/components/DeleteListingButton";
 
 const Assign = () => {
   const navigate = useNavigate();
@@ -24,7 +25,8 @@ const Assign = () => {
       const { data, error } = await supabase
         .from("listings")
         .select("*, categories(name)")
-        .eq("status", "assign");
+        .eq("status", "assign")
+        .is("deleted_at", null);
       if (error) throw error;
       return data;
     },
@@ -87,9 +89,12 @@ const Assign = () => {
                   <TableCell>{listing.categories?.name}</TableCell>
                   <TableCell><StatusBadge status={listing.status} /></TableCell>
                   <TableCell>
-                    <Button size="sm" onClick={() => setSelectedListing(listing)}>
-                      Assign
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => setSelectedListing(listing)}>
+                        Assign
+                      </Button>
+                      <DeleteListingButton listingId={listing.id} queryKey={["assign-listings"]} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

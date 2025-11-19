@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { DeleteListingButton } from "@/components/DeleteListingButton";
 
 const PR = () => {
   const navigate = useNavigate();
@@ -16,7 +17,8 @@ const PR = () => {
       const { data, error } = await supabase
         .from("listings")
         .select("*, categories(name)")
-        .eq("status", "pr");
+        .eq("status", "pr")
+        .is("deleted_at", null);
       if (error) throw error;
       return data;
     },
@@ -41,6 +43,7 @@ const PR = () => {
                 <TableHead>Description</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -51,6 +54,9 @@ const PR = () => {
                   <TableCell className="max-w-xs truncate">{listing.description}</TableCell>
                   <TableCell>{listing.categories?.name}</TableCell>
                   <TableCell><StatusBadge status={listing.status} /></TableCell>
+                  <TableCell>
+                    <DeleteListingButton listingId={listing.id} queryKey={["pr-listings"]} />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
