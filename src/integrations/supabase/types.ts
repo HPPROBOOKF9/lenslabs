@@ -40,18 +40,29 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
+          parent_id: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           name: string
+          parent_id?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           name?: string
+          parent_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       listings: {
         Row: {
@@ -59,6 +70,7 @@ export type Database = {
           category_id: string | null
           created_at: string | null
           created_by: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           product_name: string
@@ -71,6 +83,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           product_name: string
@@ -83,6 +96,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           product_name?: string

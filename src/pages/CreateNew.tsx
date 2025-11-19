@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, FolderPlus, List } from "lucide-react";
+import { ArrowLeft, Plus, FolderPlus, List, FolderTree } from "lucide-react";
 import { z } from "zod";
 
 const listingSchema = z.object({
@@ -24,7 +24,8 @@ const categorySchema = z.object({
   name: z.string()
     .trim()
     .min(1, "Category name is required")
-    .max(100, "Category name must be less than 100 characters")
+    .max(100, "Category name must be less than 100 characters"),
+  parent_id: z.string().uuid().optional().nullable()
 });
 
 const bulkListingSchema = z.object({
@@ -38,21 +39,29 @@ const CreateNew = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [mode, setMode] = useState<"listing" | "category" | "bulk" | null>(null);
+  const [mode, setMode] = useState<"listing" | "category" | "subcategory" | "bulk" | null>(null);
   const [productName, setProductName] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [bulkCategoryId, setBulkCategoryId] = useState("");
   const [bulkText, setBulkText] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [parentCategoryId, setParentCategoryId] = useState("");
+  const [subCategoryName, setSubCategoryName] = useState("");
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("categories").select("*");
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .order("name");
       if (error) throw error;
       return data;
     },
   });
+
+  const parentCategories = categories?.filter(cat => !cat.parent_id) || [];
+  const subCategories = categories?.filter(cat => cat.parent_id) || [];
 
   const handleCreateListing = async () => {
     try {
@@ -91,11 +100,13 @@ const CreateNew = () => {
   const handleCreateCategory = async () => {
     try {
       const validated = categorySchema.parse({
-        name: newCategoryName
+        name: newCategoryName,
+        parent_id: null
       });
 
       const { error } = await supabase.from("categories").insert({
         name: validated.name,
+        parent_id: null,
       });
 
       if (error) {
@@ -106,6 +117,35 @@ const CreateNew = () => {
       toast({ title: "Category created successfully" });
       await queryClient.invalidateQueries({ queryKey: ["categories"] });
       setNewCategoryName("");
+      setMode(null);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast({ title: error.errors[0].message, variant: "destructive" });
+      }
+    }
+  };
+
+  const handleCreateSubCategory = async () => {
+    try {
+      const validated = categorySchema.parse({
+        name: subCategoryName,
+        parent_id: parentCategoryId
+      });
+
+      const { error } = await supabase.from("categories").insert({
+        name: validated.name,
+        parent_id: validated.parent_id,
+      });
+
+      if (error) {
+        toast({ title: "Error creating subcategory", variant: "destructive" });
+        return;
+      }
+
+      toast({ title: "Subcategory created successfully" });
+      await queryClient.invalidateQueries({ queryKey: ["categories"] });
+      setSubCategoryName("");
+      setParentCategoryId("");
       setMode(null);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -171,7 +211,7 @@ const CreateNew = () => {
         </div>
 
         {!mode && (
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <Card
               className="p-8 flex flex-col items-center justify-center gap-4 hover:bg-accent transition-colors cursor-pointer"
               onClick={() => setMode("listing")}
@@ -192,6 +232,13 @@ const CreateNew = () => {
             >
               <FolderPlus className="w-16 h-16 text-primary" strokeWidth={1.5} />
               <div className="text-lg font-medium text-center">Create New Category</div>
+            </Card>
+            <Card
+              className="p-8 flex flex-col items-center justify-center gap-4 hover:bg-accent transition-colors cursor-pointer"
+              onClick={() => setMode("subcategory")}
+            >
+              <FolderTree className="w-16 h-16 text-primary" strokeWidth={1.5} />
+              <div className="text-lg font-medium text-center">Create Subcategory</div>
             </Card>
           </div>
         )}
@@ -216,11 +263,19 @@ const CreateNew = () => {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories?.map((cat) => (
+                    {parentCategories?.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
                       </SelectItem>
                     ))}
+                    {subCategories?.map((cat) => {
+                      const parent = categories?.find(c => c.id === cat.parent_id);
+                      return (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {parent?.name} → {cat.name}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -247,11 +302,19 @@ const CreateNew = () => {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories?.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
+                    {parentCategories?.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
                       </SelectItem>
                     ))}
+                    {subCategories?.map((cat) => {
+                      const parent = categories?.find(c => c.id === cat.parent_id);
+                      return (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {parent?.name} → {cat.name}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -288,12 +351,52 @@ const CreateNew = () => {
                   id="categoryName"
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="Enter category name"
+                  placeholder="e.g., Smartphones, Electronics"
                 />
               </div>
               <div className="flex gap-2">
                 <Button onClick={handleCreateCategory} className="flex-1">
                   Create Category
+                </Button>
+                <Button variant="outline" onClick={() => setMode(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {mode === "subcategory" && (
+          <Card className="p-6 space-y-4">
+            <h2 className="text-xl font-semibold">Create Subcategory</h2>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="parentCategory">Parent Category</Label>
+                <Select value={parentCategoryId} onValueChange={setParentCategoryId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select parent category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {parentCategories?.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="subCategoryName">Subcategory Name</Label>
+                <Input
+                  id="subCategoryName"
+                  value={subCategoryName}
+                  onChange={(e) => setSubCategoryName(e.target.value)}
+                  placeholder="e.g., Samsung, Redmi"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleCreateSubCategory} className="flex-1">
+                  Create Subcategory
                 </Button>
                 <Button variant="outline" onClick={() => setMode(null)}>
                   Cancel

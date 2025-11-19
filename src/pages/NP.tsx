@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { DeleteListingButton } from "@/components/DeleteListingButton";
 
 const NP = () => {
   const navigate = useNavigate();
@@ -19,7 +20,8 @@ const NP = () => {
       const { data, error } = await supabase
         .from("listings")
         .select("*, categories(name)")
-        .eq("status", "np");
+        .eq("status", "np")
+        .is("deleted_at", null);
       if (error) throw error;
       return data;
     },
@@ -70,9 +72,12 @@ const NP = () => {
                   <TableCell>{listing.categories?.name}</TableCell>
                   <TableCell><StatusBadge status={listing.status} /></TableCell>
                   <TableCell>
-                    <Button size="sm" onClick={() => resubmitMutation.mutate(listing.id)}>
-                      Resubmit to NR
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => resubmitMutation.mutate(listing.id)}>
+                        Resubmit to NR
+                      </Button>
+                      <DeleteListingButton listingId={listing.id} queryKey={["np-listings"]} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

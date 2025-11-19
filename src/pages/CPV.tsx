@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
+import { DeleteListingButton } from "@/components/DeleteListingButton";
 import { z } from "zod";
 
 const listingDetailsSchema = z.object({
@@ -39,7 +40,8 @@ const CPV = () => {
       const { data, error } = await supabase
         .from("listings")
         .select("*, categories(name)")
-        .eq("status", "cpv");
+        .eq("status", "cpv")
+        .is("deleted_at", null);
       if (error) throw error;
       return data;
     },
@@ -111,9 +113,12 @@ const CPV = () => {
                   <TableCell>{listing.categories?.name}</TableCell>
                   <TableCell><StatusBadge status={listing.status} /></TableCell>
                   <TableCell>
-                    <Button size="sm" onClick={() => handleEdit(listing)}>
-                      Add Details
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleEdit(listing)}>
+                        Add Details
+                      </Button>
+                      <DeleteListingButton listingId={listing.id} queryKey={["cpv-listings"]} />
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
