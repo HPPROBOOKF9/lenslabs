@@ -15,7 +15,8 @@ import {
   CheckCircle, 
   TrendingUp,
   Trash2,
-  Menu
+  Menu,
+  Database
 } from "lucide-react";
 import { useState } from "react";
 
@@ -129,6 +130,7 @@ const Dashboard = () => {
           <ActionCard icon={CheckCircle} label="PR" to="/pr" />
           <ActionCard icon={TrendingUp} label="TREND ANALYSIS" to="/trend-analysis" />
           <ActionCard icon={Trash2} label="DELETED LISTINGS" to="/deleted-listings" />
+          <ActionCard icon={Database} label="DATA BLOCK" to="/data-block" />
         </div>
       </div>
     </div>

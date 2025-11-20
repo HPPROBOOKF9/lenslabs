@@ -13,6 +13,7 @@ import NP from "./pages/NP";
 import PR from "./pages/PR";
 import TrendAnalysis from "./pages/TrendAnalysis";
 import DeletedListings from "./pages/DeletedListings";
+import DataBlock from "./pages/DataBlock";
 import Draft from "./pages/Draft";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="/pr" element={<ProtectedRoute><PR /></ProtectedRoute>} />
           <Route path="/trend-analysis" element={<ProtectedRoute><TrendAnalysis /></ProtectedRoute>} />
           <Route path="/deleted-listings" element={<ProtectedRoute><DeletedListings /></ProtectedRoute>} />
+          <Route path="/data-block" element={<ProtectedRoute><DataBlock /></ProtectedRoute>} />
           <Route path="/draft" element={<ProtectedRoute><Draft /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
