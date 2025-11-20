@@ -35,38 +35,46 @@ export type Database = {
         }
         Relationships: []
       }
-      categories: {
+      brands: {
         Row: {
           created_at: string | null
           id: string
           name: string
-          parent_id: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           name: string
-          parent_id?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           name?: string
-          parent_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "categories_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       listings: {
         Row: {
           assigned_to: string | null
+          brand_id: string | null
           category_id: string | null
           created_at: string | null
           created_by: string | null
@@ -80,6 +88,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          brand_id?: string | null
           category_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -93,6 +102,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          brand_id?: string | null
           category_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -105,6 +115,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "listings_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "listings_category_id_fkey"
             columns: ["category_id"]

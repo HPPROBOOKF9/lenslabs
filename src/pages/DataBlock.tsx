@@ -11,6 +11,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { DeleteListingButton } from "@/components/DeleteListingButton";
 import { DeleteCategoryButton } from "@/components/DeleteCategoryButton";
+import { DeleteBrandButton } from "@/components/DeleteBrandButton";
 
 const DataBlock = () => {
   const navigate = useNavigate();
@@ -39,8 +40,7 @@ const DataBlock = () => {
     queryFn: async () => {
       const { data: categories, error } = await supabase
         .from("categories")
-        .select("*")
-        .is("parent_id", null);
+        .select("*");
       
       if (error) throw error;
 
@@ -58,26 +58,25 @@ const DataBlock = () => {
     },
   });
 
-  const { data: subcategoryStats } = useQuery({
-    queryKey: ["subcategory-stats"],
+  const { data: brandStats } = useQuery({
+    queryKey: ["brand-stats"],
     queryFn: async () => {
-      const { data: subcategories, error } = await supabase
-        .from("categories")
-        .select("*, parent:categories!parent_id(name)")
-        .not("parent_id", "is", null);
+      const { data: brands, error } = await supabase
+        .from("brands")
+        .select("*");
       
       if (error) throw error;
 
       const { data: listings, error: listError } = await supabase
         .from("listings")
-        .select("category_id")
+        .select("brand_id")
         .is("deleted_at", null);
       
       if (listError) throw listError;
 
-      return subcategories.map(subcat => ({
-        ...subcat,
-        productCount: listings.filter(l => l.category_id === subcat.id).length,
+      return brands.map(brand => ({
+        ...brand,
+        productCount: listings.filter(l => l.brand_id === brand.id).length,
       }));
     },
   });
@@ -149,12 +148,12 @@ const DataBlock = () => {
           </div>
         </Card>
 
-        {/* Categories and Subcategories Tabs */}
+        {/* Categories and Brands Tabs */}
         <Card className="p-6">
           <Tabs defaultValue="categories" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="categories">Categories</TabsTrigger>
-              <TabsTrigger value="subcategories">Subcategories</TabsTrigger>
+              <TabsTrigger value="brands">Brands</TabsTrigger>
             </TabsList>
 
             <TabsContent value="categories" className="mt-6">
@@ -196,44 +195,38 @@ const DataBlock = () => {
               </Table>
             </TabsContent>
 
-            <TabsContent value="subcategories" className="mt-6">
-              <h3 className="text-lg font-semibold mb-4">All Subcategories</h3>
+            <TabsContent value="brands" className="mt-6">
+              <h3 className="text-lg font-semibold mb-4">All Brands</h3>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Subcategory Name</TableHead>
-                    <TableHead>Parent Category</TableHead>
+                    <TableHead>Brand Name</TableHead>
                     <TableHead className="text-right">Product Count</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {subcategoryStats?.map((subcategory) => (
-                    <TableRow key={subcategory.id}>
-                      <TableCell className="font-medium">{subcategory.name}</TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground">
-                          {subcategory.parent?.name || "N/A"}
-                        </span>
-                      </TableCell>
+                  {brandStats?.map((brand) => (
+                    <TableRow key={brand.id}>
+                      <TableCell className="font-medium">{brand.name}</TableCell>
                       <TableCell className="text-right">
                         <span className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground font-semibold">
-                          {subcategory.productCount}
+                          {brand.productCount}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <DeleteCategoryButton 
-                          categoryId={subcategory.id}
-                          categoryName={subcategory.name}
-                          productCount={subcategory.productCount}
+                        <DeleteBrandButton 
+                          brandId={brand.id}
+                          brandName={brand.name}
+                          productCount={brand.productCount}
                         />
                       </TableCell>
                     </TableRow>
                   ))}
-                  {(!subcategoryStats || subcategoryStats.length === 0) && (
+                  {(!brandStats || brandStats.length === 0) && (
                     <TableRow>
                       <TableCell colSpan={3} className="text-center text-muted-foreground">
-                        No subcategories found
+                        No brands found
                       </TableCell>
                     </TableRow>
                   )}
