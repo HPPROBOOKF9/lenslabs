@@ -41,7 +41,7 @@ export const DeleteCategoryButton = ({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("categories")
-        .select("id, name, parent_id, parent:categories!parent_id(name)")
+        .select("id, name")
         .neq("id", categoryId);
       
       if (error) throw error;
@@ -137,9 +137,7 @@ export const DeleteCategoryButton = ({
                     ?.filter(cat => cat.id !== categoryId)
                     .map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
-                        {cat.parent_id && cat.parent?.name 
-                          ? `${cat.parent.name} → ${cat.name}`
-                          : cat.name}
+                        {cat.name}
                       </SelectItem>
                     ))}
                 </SelectContent>

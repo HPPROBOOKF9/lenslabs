@@ -17,36 +17,45 @@ const listingSchema = z.object({
     .trim()
     .min(1, "Product name is required")
     .max(200, "Product name must be less than 200 characters"),
-  category_id: z.string().uuid("Invalid category selected")
+  category_id: z.string().uuid("Invalid category selected"),
+  brand_id: z.string().uuid("Invalid brand selected").optional().nullable()
 });
 
 const categorySchema = z.object({
   name: z.string()
     .trim()
     .min(1, "Category name is required")
-    .max(100, "Category name must be less than 100 characters"),
-  parent_id: z.string().uuid().optional().nullable()
+    .max(100, "Category name must be less than 100 characters")
+});
+
+const brandSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(1, "Brand name is required")
+    .max(100, "Brand name must be less than 100 characters")
 });
 
 const bulkListingSchema = z.object({
   bulk_text: z.string()
     .trim()
     .min(1, "Please enter at least one product name"),
-  category_id: z.string().uuid("Invalid category selected")
+  category_id: z.string().uuid("Invalid category selected"),
+  brand_id: z.string().uuid().optional().nullable()
 });
 
 const CreateNew = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [mode, setMode] = useState<"listing" | "category" | "subcategory" | "bulk" | null>(null);
+  const [mode, setMode] = useState<"listing" | "category" | "brand" | "bulk" | null>(null);
   const [productName, setProductName] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [brandId, setBrandId] = useState("");
   const [bulkCategoryId, setBulkCategoryId] = useState("");
+  const [bulkBrandId, setBulkBrandId] = useState("");
   const [bulkText, setBulkText] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [parentCategoryId, setParentCategoryId] = useState("");
-  const [subCategoryName, setSubCategoryName] = useState("");
+  const [newBrandName, setNewBrandName] = useState("");
 
   const { data: categories } = useQuery({
     queryKey: ["categories"],
@@ -60,14 +69,24 @@ const CreateNew = () => {
     },
   });
 
-  const parentCategories = categories?.filter(cat => !cat.parent_id) || [];
-  const subCategories = categories?.filter(cat => cat.parent_id) || [];
+  const { data: brands } = useQuery({
+    queryKey: ["brands"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("brands")
+        .select("*")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleCreateListing = async () => {
     try {
       const validated = listingSchema.parse({
         product_name: productName,
-        category_id: categoryId
+        category_id: categoryId,
+        brand_id: brandId || null
       });
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -79,6 +98,7 @@ const CreateNew = () => {
       const { error } = await supabase.from("listings").insert({
         product_name: validated.product_name,
         category_id: validated.category_id,
+        brand_id: validated.brand_id,
         status: "cpv",
         created_by: user.id,
       });
@@ -100,13 +120,11 @@ const CreateNew = () => {
   const handleCreateCategory = async () => {
     try {
       const validated = categorySchema.parse({
-        name: newCategoryName,
-        parent_id: null
+        name: newCategoryName
       });
 
       const { error } = await supabase.from("categories").insert({
-        name: validated.name,
-        parent_id: null,
+        name: validated.name
       });
 
       if (error) {
@@ -125,27 +143,24 @@ const CreateNew = () => {
     }
   };
 
-  const handleCreateSubCategory = async () => {
+  const handleCreateBrand = async () => {
     try {
-      const validated = categorySchema.parse({
-        name: subCategoryName,
-        parent_id: parentCategoryId
+      const validated = brandSchema.parse({
+        name: newBrandName
       });
 
-      const { error } = await supabase.from("categories").insert({
-        name: validated.name,
-        parent_id: validated.parent_id,
+      const { error } = await supabase.from("brands").insert({
+        name: validated.name
       });
 
       if (error) {
-        toast({ title: "Error creating subcategory", variant: "destructive" });
+        toast({ title: "Error creating brand", variant: "destructive" });
         return;
       }
 
-      toast({ title: "Subcategory created successfully" });
-      await queryClient.invalidateQueries({ queryKey: ["categories"] });
-      setSubCategoryName("");
-      setParentCategoryId("");
+      toast({ title: "Brand created successfully" });
+      await queryClient.invalidateQueries({ queryKey: ["brands"] });
+      setNewBrandName("");
       setMode(null);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -158,7 +173,8 @@ const CreateNew = () => {
     try {
       const validated = bulkListingSchema.parse({
         bulk_text: bulkText,
-        category_id: bulkCategoryId
+        category_id: bulkCategoryId,
+        brand_id: bulkBrandId || null
       });
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -180,6 +196,7 @@ const CreateNew = () => {
       const listings = productNames.map(name => ({
         product_name: name,
         category_id: validated.category_id,
+        brand_id: validated.brand_id,
         status: "cpv" as const,
         created_by: user.id,
       }));
@@ -235,10 +252,10 @@ const CreateNew = () => {
             </Card>
             <Card
               className="p-8 flex flex-col items-center justify-center gap-4 hover:bg-accent transition-colors cursor-pointer"
-              onClick={() => setMode("subcategory")}
+              onClick={() => setMode("brand")}
             >
               <FolderTree className="w-16 h-16 text-primary" strokeWidth={1.5} />
-              <div className="text-lg font-medium text-center">Create Subcategory</div>
+              <div className="text-lg font-medium text-center">Create Brand</div>
             </Card>
           </div>
         )}
@@ -263,19 +280,26 @@ const CreateNew = () => {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {parentCategories?.map((cat) => (
+                    {categories?.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
                       </SelectItem>
                     ))}
-                    {subCategories?.map((cat) => {
-                      const parent = categories?.find(c => c.id === cat.parent_id);
-                      return (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {parent?.name} → {cat.name}
-                        </SelectItem>
-                      );
-                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="brand">Brand (Optional)</Label>
+                <Select value={brandId} onValueChange={setBrandId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select brand" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {brands?.map((brand) => (
+                      <SelectItem key={brand.id} value={brand.id}>
+                        {brand.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -302,19 +326,26 @@ const CreateNew = () => {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {parentCategories?.map((cat) => (
+                    {categories?.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id}>
                         {cat.name}
                       </SelectItem>
                     ))}
-                    {subCategories?.map((cat) => {
-                      const parent = categories?.find(c => c.id === cat.parent_id);
-                      return (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {parent?.name} → {cat.name}
-                        </SelectItem>
-                      );
-                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="bulkBrand">Brand (Optional)</Label>
+                <Select value={bulkBrandId} onValueChange={setBulkBrandId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select brand" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {brands?.map((brand) => (
+                      <SelectItem key={brand.id} value={brand.id}>
+                        {brand.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -366,37 +397,22 @@ const CreateNew = () => {
           </Card>
         )}
 
-        {mode === "subcategory" && (
+        {mode === "brand" && (
           <Card className="p-6 space-y-4">
-            <h2 className="text-xl font-semibold">Create Subcategory</h2>
+            <h2 className="text-xl font-semibold">Create Brand</h2>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="parentCategory">Parent Category</Label>
-                <Select value={parentCategoryId} onValueChange={setParentCategoryId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select parent category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {parentCategories?.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="subCategoryName">Subcategory Name</Label>
+                <Label htmlFor="brandName">Brand Name</Label>
                 <Input
-                  id="subCategoryName"
-                  value={subCategoryName}
-                  onChange={(e) => setSubCategoryName(e.target.value)}
-                  placeholder="e.g., Samsung, Redmi"
+                  id="brandName"
+                  value={newBrandName}
+                  onChange={(e) => setNewBrandName(e.target.value)}
+                  placeholder="e.g., Samsung, Apple, Nike"
                 />
               </div>
               <div className="flex gap-2">
-                <Button onClick={handleCreateSubCategory} className="flex-1">
-                  Create Subcategory
+                <Button onClick={handleCreateBrand} className="flex-1">
+                  Create Brand
                 </Button>
                 <Button variant="outline" onClick={() => setMode(null)}>
                   Cancel
