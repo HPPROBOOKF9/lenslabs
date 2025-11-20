@@ -10,6 +10,7 @@ import { ArrowLeft, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { DeleteListingButton } from "@/components/DeleteListingButton";
+import { DeleteCategoryButton } from "@/components/DeleteCategoryButton";
 
 const DataBlock = () => {
   const navigate = useNavigate();
@@ -163,6 +164,7 @@ const DataBlock = () => {
                   <TableRow>
                     <TableHead>Category Name</TableHead>
                     <TableHead className="text-right">Product Count</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -173,6 +175,13 @@ const DataBlock = () => {
                         <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground font-semibold">
                           {category.productCount}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DeleteCategoryButton 
+                          categoryId={category.id}
+                          categoryName={category.name}
+                          productCount={category.productCount}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -195,6 +204,7 @@ const DataBlock = () => {
                     <TableHead>Subcategory Name</TableHead>
                     <TableHead>Parent Category</TableHead>
                     <TableHead className="text-right">Product Count</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -210,6 +220,13 @@ const DataBlock = () => {
                         <span className="px-3 py-1 rounded-full bg-secondary text-secondary-foreground font-semibold">
                           {subcategory.productCount}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DeleteCategoryButton 
+                          categoryId={subcategory.id}
+                          categoryName={subcategory.name}
+                          productCount={subcategory.productCount}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
