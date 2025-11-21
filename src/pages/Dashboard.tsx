@@ -16,7 +16,8 @@ import {
   TrendingUp,
   Trash2,
   Menu,
-  Database
+  Database,
+  Shield
 } from "lucide-react";
 import { useState } from "react";
 
@@ -131,6 +132,7 @@ const Dashboard = () => {
           <ActionCard icon={TrendingUp} label="TREND ANALYSIS" to="/trend-analysis" />
           <ActionCard icon={Trash2} label="DELETED LISTINGS" to="/deleted-listings" />
           <ActionCard icon={Database} label="DATA BLOCK" to="/data-block" />
+          <ActionCard icon={Shield} label="ADMIN PRIVILEGES" to="/admin-privileges" />
         </div>
       </div>
     </div>
