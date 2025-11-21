@@ -14,24 +14,97 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_activity_log: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string | null
+          details: Json | null
+          id: string
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_activity_log_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admin_permissions: {
+        Row: {
+          admin_id: string
+          can_access: boolean | null
+          created_at: string | null
+          id: string
+          section: string
+        }
+        Insert: {
+          admin_id: string
+          can_access?: boolean | null
+          created_at?: string | null
+          id?: string
+          section: string
+        }
+        Update: {
+          admin_id?: string
+          can_access?: boolean | null
+          created_at?: string | null
+          id?: string
+          section?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_permissions_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "admins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admins: {
         Row: {
           admin_code: string
           created_at: string | null
+          email: string | null
           id: string
           name: string
+          phone: string | null
+          status: string | null
         }
         Insert: {
           admin_code: string
           created_at?: string | null
+          email?: string | null
           id?: string
           name: string
+          phone?: string | null
+          status?: string | null
         }
         Update: {
           admin_code?: string
           created_at?: string | null
+          email?: string | null
           id?: string
           name?: string
+          phone?: string | null
+          status?: string | null
         }
         Relationships: []
       }
