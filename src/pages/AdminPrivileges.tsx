@@ -25,43 +25,27 @@ const AdminPrivileges = () => {
     setLoading(true);
 
     try {
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("You must be logged in to create admins");
+      }
+
+      const { data, error } = await supabase.functions.invoke("create-admin", {
+        body: {
+          email: formData.email,
+          password: formData.password,
+          adminCode: formData.adminCode,
+          name: formData.name,
+          phone: formData.phone,
         },
       });
 
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error("Failed to create user");
-      }
-
-      // Create admin record
-      const { error: adminError } = await supabase.from("admins").insert({
-        admin_code: formData.adminCode,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        status: "active",
-      });
-
-      if (adminError) throw adminError;
-
-      // Assign admin role
-      const { error: roleError } = await supabase.from("user_roles").insert({
-        user_id: authData.user.id,
-        role: "admin",
-      });
-
-      if (roleError) throw roleError;
+      if (error) throw error;
 
       toast({
         title: "Admin created successfully",
-        description: `Admin ${formData.adminCode} has been created.`,
+        description: `Admin ${formData.adminCode} has been created and can now log in.`,
       });
 
       setFormData({
