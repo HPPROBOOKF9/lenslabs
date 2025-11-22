@@ -48,10 +48,11 @@ const Dashboard = () => {
         pr: listings.filter(l => l.status === "pr").length,
         np: listings.filter(l => l.status === "np").length,
         assign: listings.filter(l => l.status === "assign").length,
+        published: listings.filter(l => l.status === "published").length,
       };
 
       return {
-        listed: listings.length,
+        listed: listings.filter(l => l.status === "published").length,
         categories: categories.length,
         ...statusCounts,
       };
