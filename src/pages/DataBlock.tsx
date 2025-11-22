@@ -25,7 +25,7 @@ const DataBlock = () => {
       
       const { data, error } = await supabase
         .from("listings")
-        .select("*, categories(name)")
+        .select("*, categories(name), brands(name)")
         .is("deleted_at", null)
         .or(`product_name.ilike.%${searchQuery}%,title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
       
@@ -174,10 +174,11 @@ const DataBlock = () => {
         {/* Categories and Brands Tabs */}
         <Card className="p-6">
           <Tabs defaultValue="categories" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="categories">Categories</TabsTrigger>
               <TabsTrigger value="brands">Brands</TabsTrigger>
               <TabsTrigger value="duplicates">Duplicate Listings</TabsTrigger>
+              <TabsTrigger value="listed">Listed Products</TabsTrigger>
             </TabsList>
 
             <TabsContent value="categories" className="mt-6">
@@ -310,6 +311,48 @@ const DataBlock = () => {
                   No duplicate listings found
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="listed" className="mt-6">
+              <h3 className="text-lg font-semibold mb-4">Listed Products</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product Name</TableHead>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Brand</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {searchResults?.filter(l => l.status === 'published').map((listing) => (
+                    <TableRow key={listing.id}>
+                      <TableCell className="font-medium">{listing.product_name}</TableCell>
+                      <TableCell>{listing.title || '-'}</TableCell>
+                      <TableCell>{listing.categories?.name || '-'}</TableCell>
+                      <TableCell>{listing.brands?.name || '-'}</TableCell>
+                      <TableCell>
+                        {new Date(listing.created_at || '').toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DeleteListingButton 
+                          listingId={listing.id} 
+                          queryKey={["search-listings", searchQuery]} 
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!searchResults || searchResults.filter(l => l.status === 'published').length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        No listed products found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </TabsContent>
           </Tabs>
         </Card>
