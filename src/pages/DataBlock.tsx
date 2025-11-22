@@ -81,6 +81,29 @@ const DataBlock = () => {
     },
   });
 
+  const { data: duplicateListings } = useQuery({
+    queryKey: ["duplicate-listings"],
+    queryFn: async () => {
+      const { data: listings, error } = await supabase
+        .from("listings")
+        .select("*, categories(name), brands(name)")
+        .is("deleted_at", null);
+      
+      if (error) throw error;
+
+      // Group by product_name to find duplicates
+      const grouped = listings.reduce((acc, listing) => {
+        const key = listing.product_name.toLowerCase().trim();
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(listing);
+        return acc;
+      }, {} as Record<string, typeof listings>);
+
+      // Filter only groups with more than one item
+      return Object.values(grouped).filter(group => group.length > 1);
+    },
+  });
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -151,9 +174,10 @@ const DataBlock = () => {
         {/* Categories and Brands Tabs */}
         <Card className="p-6">
           <Tabs defaultValue="categories" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="categories">Categories</TabsTrigger>
               <TabsTrigger value="brands">Brands</TabsTrigger>
+              <TabsTrigger value="duplicates">Duplicate Listings</TabsTrigger>
             </TabsList>
 
             <TabsContent value="categories" className="mt-6">
@@ -232,6 +256,60 @@ const DataBlock = () => {
                   )}
                 </TableBody>
               </Table>
+            </TabsContent>
+
+            <TabsContent value="duplicates" className="mt-6">
+              <h3 className="text-lg font-semibold mb-4">Duplicate Listings</h3>
+              {duplicateListings && duplicateListings.length > 0 ? (
+                <div className="space-y-6">
+                  {duplicateListings.map((group, groupIndex) => (
+                    <Card key={groupIndex} className="p-4">
+                      <h4 className="font-semibold mb-3 text-primary">
+                        Product: {group[0].product_name} ({group.length} duplicates)
+                      </h4>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Title</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Brand</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {group.map((listing) => (
+                            <TableRow key={listing.id}>
+                              <TableCell className="font-medium">{listing.title || '-'}</TableCell>
+                              <TableCell>{listing.categories?.name || '-'}</TableCell>
+                              <TableCell>{listing.brands?.name || '-'}</TableCell>
+                              <TableCell>
+                                <span className="px-2 py-1 rounded-md bg-accent text-accent-foreground text-xs uppercase">
+                                  {listing.status}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                {new Date(listing.created_at || '').toLocaleDateString()}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <DeleteListingButton 
+                                  listingId={listing.id} 
+                                  queryKey={["duplicate-listings"]} 
+                                />
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No duplicate listings found
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </Card>
