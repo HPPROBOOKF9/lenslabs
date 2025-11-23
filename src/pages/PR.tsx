@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { DeleteListingButton } from "@/components/DeleteListingButton";
 import { toast } from "sonner";
 import { useState } from "react";
+import { logAdminActivity } from "@/lib/activityLogger";
 
 const PR = () => {
   const navigate = useNavigate();
@@ -37,6 +38,12 @@ const PR = () => {
         .in("id", listingIds);
       
       if (error) throw error;
+
+      await logAdminActivity({
+        action: "LISTINGS_PUBLISHED",
+        section: "pr",
+        details: { listing_ids: listingIds, count: listingIds.length }
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pr-listings"] });

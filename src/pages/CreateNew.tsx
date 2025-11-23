@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, FolderPlus, List, FolderTree } from "lucide-react";
 import { z } from "zod";
+import { logAdminActivity } from "@/lib/activityLogger";
 
 const listingSchema = z.object({
   product_name: z.string()
@@ -107,6 +108,12 @@ const CreateNew = () => {
         toast({ title: "Error creating listing", variant: "destructive" });
         return;
       }
+
+      await logAdminActivity({
+        action: "LISTING_CREATED",
+        section: "create_listing",
+        details: { product_name: validated.product_name, category_id: validated.category_id, brand_id: validated.brand_id }
+      });
 
       toast({ title: "Listing created and moved to CPV" });
       navigate("/cpv");
@@ -207,6 +214,12 @@ const CreateNew = () => {
         toast({ title: "Error creating listings", variant: "destructive" });
         return;
       }
+
+      await logAdminActivity({
+        action: "BULK_LISTINGS_CREATED",
+        section: "create_listing",
+        details: { count: productNames.length, category_id: validated.category_id, brand_id: validated.brand_id }
+      });
 
       toast({ title: `${productNames.length} listings created and moved to CPV` });
       navigate("/cpv");

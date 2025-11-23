@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CheckCircle, XCircle } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { DeleteListingButton } from "@/components/DeleteListingButton";
+import { logAdminActivity } from "@/lib/activityLogger";
 
 const NR = () => {
   const navigate = useNavigate();
@@ -34,6 +35,12 @@ const NR = () => {
         .update({ status: newStatus })
         .eq("id", listingId);
       if (error) throw error;
+
+      await logAdminActivity({
+        action: newStatus === "pr" ? "LISTING_PASSED" : "LISTING_REJECTED",
+        section: "nr",
+        details: { listing_id: listingId, new_status: newStatus }
+      });
     },
     onSuccess: (_, variables) => {
       const message = variables.newStatus === "pr" 
