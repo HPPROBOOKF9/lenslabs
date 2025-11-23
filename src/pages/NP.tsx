@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { DeleteListingButton } from "@/components/DeleteListingButton";
+import { logAdminActivity } from "@/lib/activityLogger";
 
 const NP = () => {
   const navigate = useNavigate();
@@ -34,6 +35,12 @@ const NP = () => {
         .update({ status: "nr" })
         .eq("id", listingId);
       if (error) throw error;
+
+      await logAdminActivity({
+        action: "LISTING_RESUBMITTED",
+        section: "np",
+        details: { listing_id: listingId }
+      });
     },
     onSuccess: () => {
       toast({ title: "Listing resubmitted to NR for review" });

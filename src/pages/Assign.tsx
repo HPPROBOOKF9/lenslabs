@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { DeleteListingButton } from "@/components/DeleteListingButton";
+import { logAdminActivity } from "@/lib/activityLogger";
 
 const Assign = () => {
   const navigate = useNavigate();
@@ -51,6 +52,12 @@ const Assign = () => {
         })
         .eq("id", selectedListing.id);
       if (error) throw error;
+
+      await logAdminActivity({
+        action: "LISTING_ASSIGNED",
+        section: "assign",
+        details: { listing_id: selectedListing.id, assigned_to: assignedAdminId, product_name: selectedListing.product_name }
+      });
     },
     onSuccess: () => {
       toast({ title: "Listing assigned to admin's worklist" });
